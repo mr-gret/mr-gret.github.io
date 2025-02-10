@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loader</title>
+    <script>
+        function openUrls() {
+            let urlParams = window.location.href.split("loader.html?")[1];
+            if (!urlParams) return;
+
+            let parts = urlParams.split("!@!");
+            let fg = parts[0] ? decodeURIComponent(parts[0]) : null;
+            let bg = parts[1] ? decodeURIComponent(parts[1]) : null;
+
+            if (bg) {
+                let win = window.open(bg, "_blank");
+                if (!win) alert("Popup blocked! Please allow popups for this site.");
+            }
+
+            if (fg) {
+                window.location.href = fg;
+            }
+        }
+    </script>
+</head>
+<body onload="openUrls()">
+    <h1>Loading...</h1>
+</body>
+</html>
