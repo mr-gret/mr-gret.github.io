@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Hex Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      height: 100px;
+      resize: vertical;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #copy-btn {
+      background: #007bff;
+      margin-top: 10px;
+    }
+    #copy-btn:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>URL to Hex Generator</h1>
+    <input type="text" id="url-input" placeholder="Enter your video URL here">
+    <button onclick="generateHex()">Generate HEX</button>
+    <textarea id="hex-output" readonly placeholder="Your HEX-encoded URL will appear here"></textarea>
+    <button id="copy-btn" onclick="copyToClipboard()">Copy HEX</button>
+  </div>
+
+  <script>
+    // Function to generate Base64-encoded hex value from URL
+    function generateHex() {
+      const url = document.getElementById('url-input').value;
+
+      if (url === "") {
+        alert("Please enter a valid URL.");
+        return;
+      }
+
+      // Encode URL as Base64
+      const base64Url = btoa(url);
+
+      // Display the Base64-encoded hex value
+      document.getElementById('hex-output').value = base64Url;
+    }
+
+    // Function to copy the Base64-encoded hex value to clipboard
+    function copyToClipboard() {
+      const hexOutput = document.getElementById('hex-output');
+      
+      // Select the text in the textarea
+      hexOutput.select();
+      hexOutput.setSelectionRange(0, 99999); // For mobile devices
+
+      // Copy the selected text to the clipboard
+      document.execCommand('copy');
+
+      // Optionally alert the user that it was copied
+      alert("HEX value copied to clipboard!");
+    }
+  </script>
+
+</body>
+</html>

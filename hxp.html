@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Dynamic Video Player</title>
+  <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .video-container {
+      width: 100%;
+      max-width: 800px;
+      aspect-ratio: 16/9;
+      display: none;
+    }
+    select {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #auth-container {
+      text-align: center;
+      z-index: 1000;
+    }
+  </style>
+  <script>
+    // Generate SHA-256 hash (renamed from getMD5 for clarity)
+    function getSHA256(input) {
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(input)).then(buf => {
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      });
+    }
+
+    // Parse URL query parameters
+    function getQueryParams() {
+      const params = {};
+      const queryString = window.location.search.slice(1); // Remove "?"
+      const pairs = queryString.split("&");
+
+      pairs.forEach(pair => {
+        const [key, value] = pair.split("=");
+        if (key && value) {
+          params[key] = decodeURIComponent(value);
+        }
+      });
+      return params;
+    }
+
+    // Check if the entered key is correct
+    function checkKey() {
+      const keyInput = document.getElementById("key-input").value;
+      const today = new Date();
+      const day = String(today.getDate()).padStart(2, '0');
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const year = String(today.getFullYear()).slice(2);
+      const correctKey = day + month + year;
+
+      getSHA256(correctKey).then(hash => {
+        let attempts = parseInt(localStorage.getItem("attempts")) || 0;
+        if (keyInput === hash) {
+          document.getElementById("auth-container").style.display = "none";
+          document.getElementById("video-container").style.display = "block";
+          localStorage.removeItem("attempts");
+
+          // Initialize Video.js player
+          const player = videojs('dynamic-video');
+
+          // Load video sources dynamically using hexadecimal URL parameters
+          const queryParams = getQueryParams();
+          const resolutionSelector = document.getElementById('resolution-selector');
+          const resolutions = Object.keys(queryParams).filter(res => !isNaN(res)).sort((a, b) => a - b);
+
+          if (resolutions.length > 0) {
+            resolutions.forEach((res, index) => {
+              const option = document.createElement('option');
+              option.value = res;
+              option.textContent = `${res}p`;
+              resolutionSelector.appendChild(option);
+
+              // Set default resolution (first in query parameters)
+              if (index === 0) {
+                const videoSrc = atob(queryParams[res]);  // Decode hex value to get actual URL
+                player.src({ type: 'video/mp4', src: videoSrc });
+                player.play();
+              }
+            });
+
+            // Change video source based on selected resolution
+            resolutionSelector.addEventListener('change', (event) => {
+              const selectedResolution = event.target.value;
+              const videoSrc = atob(queryParams[selectedResolution]); // Decode hex value
+              if (videoSrc) {
+                player.src({ type: 'video/mp4', src: videoSrc });
+                player.play();
+              }
+            });
+          } else {
+            alert('No video sources provided in the URL.');
+          }
+
+        } else {
+          attempts++;
+          localStorage.setItem("attempts", attempts);
+          alert("Incorrect key. Attempts left: " + (3 - attempts));
+          if (attempts >= 3) {
+            document.body.innerHTML = "<h2 style='color: red; text-align: center;'>Access Denied</h2>";
+          }
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+  <div id="auth-container">
+    <h2>Enter Today's Key</h2>
+    <input type="text" id="key-input" placeholder="Enter key here">
+    <button onclick="checkKey()">Submit</button>
+  </div>
+
+  <div class="video-container" id="video-container">
+    <video
+      id="dynamic-video"
+      class="video-js vjs-default-skin"
+      controls
+      preload="auto"
+      style="width: 100%; height: 100%;"
+      data-setup='{}'>
+      <p>Your browser does not support HTML5 video.</p>
+    </video>
+    <select id="resolution-selector"></select>
+  </div>
+
+  <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
+</body>
+</html>
