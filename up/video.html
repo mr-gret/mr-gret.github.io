@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Player</title>
+  <style>
+    body { margin: 0; background: black; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; text-align: center; }
+    video { width: 90%; max-height: 80vh; margin-bottom: 10px; display: none; }
+    select { padding: 8px 16px; border-radius: 6px; font-size: 16px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div id="message">🔒 Verifying token...</div>
+  <select id="qualitySelect" style="display:none;">
+    <option value="720">720p</option>
+    <option value="480">480p</option>
+  </select>
+  <video id="secureVideo" controls autoplay></video>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+  <script>
+    function getTodayToken() {
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const yy = String(now.getFullYear()).slice(-2);
+      return md5(dd + mm + yy);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const base64_720 = params.get("video");
+    const base64_480 = params.get("video2");
+    const token = params.get("token");
+
+    if (!base64_720 || !base64_480 || !token) {
+      document.getElementById("message").innerText = "❌ Missing parameters.";
+    } else if (token !== getTodayToken()) {
+      document.getElementById("message").innerText = "❌ Invalid or expired token.";
+    } else {
+      const url_720 = atob(base64_720);
+      const url_480 = atob(base64_480);
+
+      const video = document.getElementById("secureVideo");
+      const select = document.getElementById("qualitySelect");
+
+      video.src = url_720;
+      video.style.display = "block";
+      select.style.display = "inline-block";
+      document.getElementById("message").remove();
+
+      select.addEventListener("change", () => {
+        const time = video.currentTime;
+        const playing = !video.paused;
+        video.src = select.value === "720" ? url_720 : url_480;
+        video.currentTime = time;
+        if (playing) video.play();
+      });
+    }
+  </script>
+</body>
+</html>
