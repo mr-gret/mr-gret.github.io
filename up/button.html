@@ -1,0 +1,26 @@
+<div style="text-align:center;">
+  <button onclick="openPlayer()" style="padding:10px 20px; font-size:16px; border:none; border-radius:8px; background-color:#4CAF50; color:white; cursor:pointer;">
+    🎥 Watch Video (720p/480p)
+  </button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
+<script>
+  function openPlayer() {
+    const playerUrl = "video.html"; // Your player page
+    const video720 = "https://cs-file-to-linkz-7e8a13994964.herokuapp.com/dl/67e3bb5a2db140093601711f"; // 720p URL
+    const video480 = "https://cs-file-to-linkz-7e8a13994964.herokuapp.com/dl/67e3bb5a2db140093601711e"; // 480p URL
+
+    const base64_720 = btoa(video720);
+    const base64_480 = btoa(video480);
+
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const token = md5(dd + mm + yy);
+
+    const fullUrl = `${playerUrl}?video=${base64_720}&video2=${base64_480}&token=${token}`;
+    window.open(fullUrl, "_blank");
+  }
+</script>
