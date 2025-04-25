@@ -1,0 +1,37 @@
+<style>
+  #secureBtn {
+    padding: 12px 24px;
+    font-size: 16px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+
+  #secureBtn:hover {
+    background: #218838;
+  }
+</style>
+
+<button id="secureBtn" onclick="openSecureLink()">🎥 Watch Secure Video</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script>
+  function openSecureLink() {
+    const playerURL = "https://example.com/player.html"; // ← Your actual player page
+    const videoID = "VHwOyrWodS4"; // ← Your actual YouTube video ID
+
+    const encodedID = btoa(videoID);
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(2);
+    const dateStr = dd + mm + yy;
+    const token = CryptoJS.MD5(dateStr).toString();
+
+    const finalLink = `${playerURL}?id=${encodedID}&token=${token}`;
+    window.open(finalLink, '_blank');
+  }
+</script>
