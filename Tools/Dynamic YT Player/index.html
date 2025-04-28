@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Dynamic YouTube Nocookie Pro Player</title>
+  <!-- Mobile viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Super Video & Live Player</title>
   <!-- CryptoJS for MD5 hashing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <style>
@@ -17,34 +19,36 @@
     .player-container {
       position: relative;
       max-width: 900px;
-      margin: 40px auto;
+      margin: 20px auto;
       background: #000;
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 0 20px #000;
       display: none; /* hidden until token validated */
     }
-    iframe {
+    /* 16:9 Aspect Ratio */
+    .video-wrapper {
+      position: relative;
       width: 100%;
-      height: 500px;
+      padding-bottom: 56.25%;
+    }
+    .video-wrapper iframe,
+    .video-wrapper #overlayMessage {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       pointer-events: none;
     }
     #overlayMessage {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 500px;
-      background: black;
-      color: white;
+      background: rgba(0,0,0,0.8);
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      font-size: 20px;
+      font-size: 1rem;
       font-weight: bold;
       z-index: 2;
-      pointer-events: none;
+      color: #fff;
     }
     .progress-bar {
       width: 100%;
@@ -60,14 +64,14 @@
     }
     .time {
       text-align: center;
-      margin: 10px 0;
-      font-size: 14px;
+      margin: 8px 0;
+      font-size: 0.9rem;
     }
     .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      padding: 16px;
+      padding: 12px;
       justify-content: center;
       background-color: rgba(0,0,0,0.8);
       transition: opacity 0.3s;
@@ -77,8 +81,8 @@
       pointer-events: none;
     }
     button, select, input[type=range] {
-      font-size: 16px;
-      padding: 8px 14px;
+      font-size: 1rem;
+      padding: 6px 12px;
       border-radius: 6px;
       border: none;
       cursor: pointer;
@@ -96,7 +100,8 @@
       gap: 6px;
     }
     .volume-slider {
-      width: 100px;
+      width: 80px;
+      max-width: 30vw;
     }
     /* Themes */
     body.classic .progress { background: #FFD700; }
@@ -106,16 +111,50 @@
     body.lime .progress { background: #ADFF2F; }
     body.lime button { background: #9ACD32; color: #111; }
     body.lime button:hover { background: #bfff00; }
+    /* Live button */
+    .live-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background: grey;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 3;
+      display: none;
+    }
+    .live-btn.blink {
+      animation: blink 1s step-start infinite;
+      background: red;
+    }
+    @keyframes blink {
+      50% { opacity: 0.5; }
+    }
+    /* Responsive tweaks */
+    @media (max-width: 600px) {
+      .controls { gap: 8px; padding: 8px; }
+      button, select, input[type=range] { font-size: 0.85rem; padding: 4px 8px; }
+      .time { font-size: 0.8rem; }
+      p { font-size: 0.9rem; margin: 10px; }
+    }
   </style>
 </head>
 <body class="classic" oncontextmenu="return false;">
 
   <div class="player-container" id="playerContainer">
-    <iframe id="ytPlayer" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    <div id="overlayMessage">Click on Play button to start playback.</div>
-    <div class="progress-bar" onclick="seekVideo(event)"><div class="progress" id="progressBar"></div></div>
+    <div class="video-wrapper">
+      <iframe id="ytPlayer" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <div id="overlayMessage">Click on Play button to start playback.</div>
+    </div>
+
+    <div class="progress-bar" onclick="seekVideo(event)">
+      <div class="progress" id="progressBar"></div>
+    </div>
     <div class="time" id="timeDisplay">0:00 / 0:00</div>
-    <div class="controls" id="controls">
+    <div class="controls hidden" id="controls">
       <button id="playPauseBtn" onclick="togglePlayPause()">Play</button>
       <div class="volume-container">
         <label>🔊</label>
@@ -128,51 +167,123 @@
         <option value="lime">🍋 Lime</option>
       </select>
     </div>
+
+    <button id="liveBtn" class="live-btn">Go Live</button>
   </div>
 
+  <p style="text-align:center">
+    Press "Esc" to exit fullscreen.
+  </p>
+
   <script>
-    // Parse URL parameters
+    // --- Token validation ---
     const params = new URLSearchParams(window.location.search);
     const idParam = params.get('id') || '';
     const tokenParam = params.get('token') || '';
-
-    // Compute today's MD5 token
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');
     const mm = String(today.getMonth()+1).padStart(2, '0');
     const yy = String(today.getFullYear()).slice(-2);
-    const key = dd + mm + yy;
-    const validToken = CryptoJS.MD5(key).toString();
-
-    // Validate token
+    const validToken = CryptoJS.MD5(dd + mm + yy).toString();
     if (tokenParam !== validToken) {
-      document.body.innerHTML = '<div style="display:flex; height:100vh; justify-content:center; align-items:center; background:#fff; color:#000; font-size:24px;">Access Denied</div>';
+      document.body.innerHTML = '<div style="display:flex; height:100vh; margin:0; justify-content:center; align-items:center; background:#fff; color:#000; font-size:24px;">Access Denied</div>';
       throw new Error('Invalid access token');
     }
 
-    // Decode video ID and initialize player UI
+    // --- Initialize iframe ---
     const decodedId = atob(idParam);
     const iframe = document.getElementById('ytPlayer');
-    iframe.src = `https://www.youtube-nocookie.com/embed/${decodedId}?enablejsapi=1&controls=0`;
+    iframe.src = `https://www.youtube-nocookie.com/embed/${decodedId}?enablejsapi=1&controls=0&rel=0`;
     document.getElementById('playerContainer').style.display = 'block';
 
-    // YouTube API & controls logic
-    let player, duration = 0;
+    let player;
     const playPauseBtn = document.getElementById('playPauseBtn');
+    const controlsEl   = document.getElementById('controls');
+    const liveBtn      = document.getElementById('liveBtn');
 
+    // --- YouTube IFrame API setup ---
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('ytPlayer', {
-        events: { onReady: () => {
-            duration = player.getDuration();
-            updateProgress();
+        events: {
+          onReady: () => {
+            // Start our loops
+            tick();
           }
         }
       });
     }
+
+    // --- Helpers ---
+    function isLiveStream() {
+      const data = player.getVideoData();
+      return data && data.isLive === true;
+    }
+
+    function formatTime(t) {
+      const hrs = Math.floor(t / 3600);
+      const mins = Math.floor((t % 3600) / 60);
+      const secs = String(Math.floor(t % 60)).padStart(2, '0');
+      if (hrs > 0) {
+        return `${hrs}:${String(mins).padStart(2,'0')}:${secs}`;
+      }
+      return `${mins}:${secs}`;
+    }
+
+    // --- Core loop ---
+    function updateProgress() {
+      const current = player.getCurrentTime();
+      let duration = player.getDuration();
+      // Progress bar only for VOD
+      if (!isLiveStream()) {
+        const pct = (current / duration) * 100;
+        document.getElementById('progressBar').style.width = pct + '%';
+      }
+      // Time display
+      const timeEl = document.getElementById('timeDisplay');
+      if (isLiveStream()) {
+        timeEl.textContent = formatTime(current);
+      } else {
+        timeEl.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+      }
+    }
+
+    function updateLiveBtn() {
+      if (!isLiveStream()) {
+        liveBtn.style.display = 'none';
+        return;
+      }
+      liveBtn.style.display = 'block';
+      const current = player.getCurrentTime();
+      const duration = player.getDuration(); // Infinity for live edge
+      if (duration - current > 2) {
+        liveBtn.textContent = 'Go Live';
+        liveBtn.classList.remove('blink');
+      } else {
+        liveBtn.textContent = 'Live streaming';
+        liveBtn.classList.add('blink');
+      }
+    }
+
+    function tick() {
+      if (player && player.getCurrentTime) {
+        updateProgress();
+        updateLiveBtn();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // --- Controls ---
     function togglePlayPause() {
       const state = player.getPlayerState();
-      if (state === 1) { player.pauseVideo(); playPauseBtn.textContent = 'Play'; document.getElementById('overlayMessage').style.display = 'flex'; }
-      else { player.playVideo(); playPauseBtn.textContent = 'Pause'; document.getElementById('overlayMessage').style.display = 'none'; }
+      if (state === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+        playPauseBtn.textContent = 'Play';
+        document.getElementById('overlayMessage').style.display = 'flex';
+      } else {
+        player.playVideo();
+        playPauseBtn.textContent = 'Pause';
+        document.getElementById('overlayMessage').style.display = 'none';
+      }
     }
     function changeVolume(slider) { player.setVolume(parseInt(slider.value)); }
     function toggleFullscreen() {
@@ -181,33 +292,25 @@
       else if (f.webkitRequestFullscreen) f.webkitRequestFullscreen();
       else if (f.msRequestFullscreen) f.msRequestFullscreen();
     }
-    function updateProgress() {
-      if (player && player.getCurrentTime) {
-        const current = player.getCurrentTime();
-        duration = player.getDuration();
-        const pct = (current / duration) * 100;
-        document.getElementById('progressBar').style.width = pct + '%';
-        document.getElementById('timeDisplay').textContent = `${formatTime(current)} / ${formatTime(duration)}`;
-        const s = player.getPlayerState();
-        if (s === 1) { playPauseBtn.textContent = 'Pause'; document.getElementById('overlayMessage').style.display = 'none'; }
-        else if (s === 2) { playPauseBtn.textContent = 'Play'; document.getElementById('overlayMessage').style.display = 'flex'; }
-      }
-      requestAnimationFrame(updateProgress);
+    function seekVideo(e) {
+      const r = e.currentTarget.getBoundingClientRect();
+      const p = (e.clientX - r.left)/r.width;
+      player.seekTo(p * player.getDuration(), true);
     }
-    function formatTime(t) { const m = Math.floor(t/60); const s = String(Math.floor(t%60)).padStart(2,'0'); return `${m}:${s}`; }
-    function seekVideo(e) { const r = e.currentTarget.getBoundingClientRect(); const p = (e.clientX - r.left)/r.width; player.seekTo(p*duration, true); }
-    function switchStyle(style) { document.body.className = style; }
+    function switchStyle(style) {
+      document.body.className = style;
+    }
 
-    // Auto-hide controls
-    let controlsTimeout;
-    const controlsEl = document.getElementById('controls');
-    document.body.addEventListener('mousemove', () => {
-      controlsEl.classList.remove('hidden');
-      clearTimeout(controlsTimeout);
-      controlsTimeout = setTimeout(() => controlsEl.classList.add('hidden'), 3000);
+    liveBtn.addEventListener('click', () => {
+      if (isLiveStream()) player.seekTo(player.getDuration(), true);
     });
 
-    // Keyboard shortcuts
+    document.body.addEventListener('mousemove', () => {
+      controlsEl.classList.remove('hidden');
+      clearTimeout(window._controlsTimeout);
+      window._controlsTimeout = setTimeout(() => controlsEl.classList.add('hidden'), 3000);
+    });
+
     document.addEventListener('keydown', (e) => {
       switch(e.code) {
         case 'Space': e.preventDefault(); togglePlayPause(); break;
@@ -217,7 +320,7 @@
       }
     });
 
-    // Load YouTube Iframe API
+    // --- Load YouTube API ---
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.body.appendChild(tag);
