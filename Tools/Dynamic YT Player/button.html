@@ -1,37 +1,61 @@
-<style>
-  #secureBtn {
-    padding: 12px 24px;
-    font-size: 16px;
-    background: #28a745;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Button</title>
+    <style>
+        .aspect-ratio-wrapper {
+            position: relative;
+            width: 100%; /* Full width */
+            padding-top: 56.25%; /* 16:9 Aspect Ratio (9/16 = 0.5625) */
+            overflow: hidden;
+        }
 
-  #secureBtn:hover {
-    background: #218838;
-  }
-</style>
+        #secureBtn {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            font-size: 10vw;
+            background: #000000;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        }
 
-<button id="secureBtn" onclick="openSecureLink()">🎥 Watch Secure Video</button>
+        #secureBtn:hover {
+            background: #393737;
+        }
+    </style>
+</head>
+<body>
+
+<div class="aspect-ratio-wrapper">
+    <button id="secureBtn" onclick="openSecureLink()">▷</button>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
-  function openSecureLink() {
-    const playerURL = "https://example.com/player.html"; // ← Your actual player page
-    const videoID = "VHwOyrWodS4"; // ← Your actual YouTube video ID
+    function openSecureLink() {
+        const playerURL = "https://frabjous-gingersnap-30093f.netlify.app/"; // ← Your actual player page
+        const videoID = "ybOZlqey4XI"; // ← Your actual YouTube video ID
 
-    const encodedID = btoa(videoID);
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yy = String(now.getFullYear()).slice(2);
-    const dateStr = dd + mm + yy;
-    const token = CryptoJS.MD5(dateStr).toString();
+        const encodedID = btoa(videoID);
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yy = String(now.getFullYear()).slice(2);
+        const dateStr = dd + mm + yy;
+        const token = CryptoJS.MD5(dateStr).toString();
 
-    const finalLink = `${playerURL}?id=${encodedID}&token=${token}`;
-    window.open(finalLink, '_blank');
-  }
+        const finalLink = `${playerURL}?id=${encodedID}&token=${token}`;
+        window.open(finalLink, '_blank');
+    }
 </script>
+
+</body>
+</html>
